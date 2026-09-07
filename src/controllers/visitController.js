@@ -47,4 +47,63 @@ const getVisits = asyncHandler(async (req, res) => {
   res.json({ success: true, data: visits, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
 });
 
-module.exports = { createVisit, getVisits };
+const lookupVisitor = asyncHandler(async (req, res) => {
+  const { mobile, email, visitorId } = req.query;
+
+  if (!mobile && !email && !visitorId) {
+    res.status(400);
+    throw new Error('Provide mobile, email, or visitorId to look up a visitor');
+  }
+
+  let filter;
+  if (visitorId) {
+    const anchor = await Visit.findOne({ visitId: visitorId.trim().toUpperCase() });
+    if (!anchor) {
+      res.json({ success: true, data: null });
+      return;
+    }
+    filter = anchor.email
+      ? { $or: [{ mobile: anchor.mobile }, { email: anchor.email }] }
+      : { mobile: anchor.mobile };
+  } else if (mobile) {
+    const digits = mobile.replace(/\D/g, '');
+    filter = { mobile: { $regex: digits, $options: 'i' } };
+  } else {
+    filter = { email: email.toLowerCase().trim() };
+  }
+
+  const visits = await Visit.find(filter).sort({ createdAt: -1 });
+
+  if (visits.length === 0) {
+    res.json({ success: true, data: null });
+    return;
+  }
+
+  const latest = visits[0];
+
+  res.json({
+    success: true,
+    data: {
+      visitorId: latest.visitId,
+      personal: {
+        fullName: latest.fullName,
+        mobile: latest.mobile,
+        email: latest.email,
+        company: latest.company,
+        designation: latest.designation,
+      },
+      totalVisits: visits.length,
+      lastVisit: latest.createdAt,
+      history: visits.slice(0, 10).map((v) => ({
+        id: v.visitId,
+        date: v.createdAt,
+        hostName: v.hostName,
+        department: v.department,
+        purpose: v.purpose,
+        status: v.status,
+      })),
+    },
+  });
+});
+
+module.exports = { createVisit, getVisits, lookupVisitor };

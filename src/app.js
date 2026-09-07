@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const cors = require('cors');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
 
@@ -11,12 +11,15 @@ app.use(
   })
 );
 app.use(express.json({ limit: '5mb' }));
+
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Visitor Hub Pro API is running' });
 });
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/visits', require('./routes/visitRoutes'));
+app.use('/api/visitors', require('./routes/visitorRoutes'));
+app.use('/api/otp', require('./routes/otpRoutes'));
 
 app.use(notFound);
 app.use(errorHandler);
