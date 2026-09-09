@@ -2,6 +2,9 @@
 const Visit = require('../models/Visit');
 const generateVisitId = require('../utils/generateVisitId');
 
+// @desc    Save a completed visitor registration
+// @route   POST /api/visits
+// @access  Public
 const createVisit = asyncHandler(async (req, res) => {
   const {
     fullName, mobile, email, company, designation, profilePhoto,
@@ -23,6 +26,9 @@ const createVisit = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: visit });
 });
 
+// @desc    List visits with pagination, search, filters
+// @route   GET /api/visits
+// @access  Private (admin)
 const getVisits = asyncHandler(async (req, res) => {
   const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
   const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
@@ -47,6 +53,13 @@ const getVisits = asyncHandler(async (req, res) => {
   res.json({ success: true, data: visits, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
 });
 
+// @desc    Look up a returning visitor by mobile, email, or a past visitId.
+//          Returns an aggregated profile built from their Visit history.
+//          The returned personal.email is what the frontend then sends to
+//          the /api/otp endpoints for verification - no separate wiring
+//          needed here for the email-OTP switch, this already returns it.
+// @route   GET /api/visitors/lookup?mobile=  or  ?email=  or  ?visitorId=
+// @access  Public
 const lookupVisitor = asyncHandler(async (req, res) => {
   const { mobile, email, visitorId } = req.query;
 
